@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+build_pack_path=$(cd $(dirname $(dirname $0)); pwd)
+
+# Ensure dirs are present
+mkdir -p $1 $2 $3
+
+build_path=$(cd $1 && pwd)
+cache_path=$(cd $2 && pwd)
+env_path=$(cd $3 && pwd)
+
+function export_env_vars() {
+  whitelist_regex=${2:-''}
+  blacklist_regex=${3:-'^(PATH|GIT_DIR|CPATH|CPPATH|LD_PRELOAD|LIBRARY_PATH)$'}
+  if [ -d "$env_path" ]; then
+    output_section "Will export the following config vars:"
+    for e in $(ls $env_path); do
+      echo "$e" | grep -E "$whitelist_regex" | grep -vE "$blacklist_regex" &&
+      export "$e=$(cat $env_path/$e)"
+      :
+    done
+  fi
+}
+
+export_env_vars
+echo "-----> Running curl $BUILDPACK_WEBHOOK_URL"
+curl "$BUILDPACK_WEBHOOK_URL" | indent
